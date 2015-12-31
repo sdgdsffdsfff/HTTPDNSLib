@@ -13,5 +13,6 @@ public class DnsCacheApplication extends Application{
         mGlobalInstance = this;
         SpfConfig.init(this.getApplicationContext());
         DNSCache.Init(this);
+        DNSCache.getInstance().preLoadDomains(new String[]{"api.weibo.cn","api.camera.weibo.com"});
     }
 }

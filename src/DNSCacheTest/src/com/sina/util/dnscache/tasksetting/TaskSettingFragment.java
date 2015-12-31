@@ -1,6 +1,5 @@
 package com.sina.util.dnscache.tasksetting;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -85,16 +84,16 @@ public class TaskSettingFragment extends Fragment {
         mEditConfig = DNSCacheConfig.Data.getInstance() ; 
         threadpool_concurrnce_num = Config.concurrencyNum;
         threadpool_reeust_num = Config.requestsNum;
+        mSeekBarInfoMapping.clear();
         //find view
         CheckBox checkBox1 = (CheckBox) contentView.findViewById(R.id.checkbox_httpdns);
         CheckBox checkBox2 = (CheckBox) contentView.findViewById(R.id.checkbox_dnspod);
-        CheckBox checkBox3 = (CheckBox) contentView.findViewById(R.id.checkbox_sort);
+        CheckBox checkBox3 = (CheckBox) contentView.findViewById(R.id.checkbox_udpdns);
+        CheckBox checkBox4 = (CheckBox) contentView.findViewById(R.id.checkbox_sort);
 
         EditText editText1 = (EditText) contentView.findViewById(R.id.editText_httpdns_api);
         EditText editText2 = (EditText) contentView.findViewById(R.id.editText_dnspod_api);
-        EditText editText3 = (EditText) contentView.findViewById(R.id.editText_dnspod_id);
-        EditText editText4 = (EditText) contentView.findViewById(R.id.editText_dnspod_key);
-        EditText editText5 = (EditText) contentView.findViewById(R.id.edittext_speed_config);
+        EditText editText3 = (EditText) contentView.findViewById(R.id.editText_udpdns_api);
 
         SeekBar seekBar1 = ((SeekBar) contentView.findViewById(R.id.seekbar_threadpool_concurrent_num));
         SeekBar seekBar2 = ((SeekBar) contentView.findViewById(R.id.seekbar_threadpool_request_num));
@@ -112,8 +111,6 @@ public class TaskSettingFragment extends Fragment {
         editText1.addTextChangedListener(new EditTextWatcher(editText1.getId()));
         editText2.addTextChangedListener(new EditTextWatcher(editText2.getId()));
         editText3.addTextChangedListener(new EditTextWatcher(editText3.getId()));
-        editText4.addTextChangedListener(new EditTextWatcher(editText4.getId()));
-        editText5.addTextChangedListener(new EditTextWatcher(editText5.getId()));
         
         seekBar1.setOnSeekBarChangeListener(seekBarChangeListener);
         seekBar2.setOnSeekBarChangeListener(seekBarChangeListener);
@@ -126,18 +123,22 @@ public class TaskSettingFragment extends Fragment {
         //set value
         checkBox1.setChecked(mEditConfig.IS_MY_HTTP_SERVER.equals("1"));
         checkBox2.setChecked(mEditConfig.IS_DNSPOD_SERVER.equals("1"));
-        checkBox3.setChecked(mEditConfig.IS_SORT.equals("1"));
+        checkBox3.setChecked(mEditConfig.IS_UDPDNS_SERVER.equals("1"));
+        checkBox4.setChecked(mEditConfig.IS_SORT.equals("1"));
 
-        editText1.setText(mEditConfig.HTTPDNS_SERVER_API);
-        editText2.setText(mEditConfig.DNSPOD_SERVER_API);
-        editText3.setText(mEditConfig.DNSPOD_ID);
-        editText4.setText(mEditConfig.DNSPOD_KEY);
-        StringBuilder pathBuilder = new StringBuilder();
-        for (String path : mEditConfig.SPEEDPATH_LIST) {
-            pathBuilder.append(path + "\n");
+        StringBuilder sinaServerApiInfo = new StringBuilder();
+        for (int i = 0; i < mEditConfig.HTTPDNS_SERVER_API.size(); i++) {
+            String api = mEditConfig.HTTPDNS_SERVER_API.get(i);
+            sinaServerApiInfo.append(api);
+            sinaServerApiInfo.append("\n");
         }
-        editText5.setText(pathBuilder.toString());
-
+        if (sinaServerApiInfo.length() > 0) {
+            sinaServerApiInfo.deleteCharAt(sinaServerApiInfo.length() - 1);
+        }
+        editText1.setText(sinaServerApiInfo.toString());
+        editText2.setText(mEditConfig.DNSPOD_SERVER_API);
+        editText3.setText(mEditConfig.UDPDNS_SERVER_API);
+       
         mSeekBarInfoMapping.put(seekBar1, new SeekBarInfo((TextView) contentView.findViewById(R.id.config_threadpool_concurrent_num),
                 "并发任务" + TAG_COLON + "%d" + "个", Config.concurrencyNum, 10, 1));
         mSeekBarInfoMapping.put(seekBar2, new SeekBarInfo((TextView) contentView.findViewById(R.id.config_threadpool_request_num), "模拟任务总数"
@@ -180,7 +181,7 @@ public class TaskSettingFragment extends Fragment {
         }
 
         public void updateView(int scale) {
-            int lableSscale = scale * unitScale;
+            int lableSscale = scale;
             String msg = String.format(lableInfo, lableSscale);
             lableView.setText(msg);
         }
@@ -277,9 +278,9 @@ public class TaskSettingFragment extends Fragment {
                 seekBar.setProgress(1);
                 return;
             }
-            seekBarInfo.updateView(progress);
-            String vaule = String.valueOf(seekBarInfo.getOriginalSeekBarProgress(progress));
-            mSeekBarDataProcessor.update(seekBar.getId(), vaule);
+            int value = seekBarInfo.getOriginalSeekBarProgress(progress);
+            seekBarInfo.updateView(value);
+            mSeekBarDataProcessor.update(seekBar.getId(), String.valueOf(value));
         }
     };
 
@@ -289,25 +290,17 @@ public class TaskSettingFragment extends Fragment {
         public void update(int id, String value) {
             switch (id) {
             case R.id.editText_httpdns_api:
-                mEditConfig.HTTPDNS_SERVER_API = value;
+                String[] array = value.split("\n");
+                mEditConfig.HTTPDNS_SERVER_API.clear();
+                for (int i = 0; i < array.length; i++) {
+                    mEditConfig.HTTPDNS_SERVER_API.add(i, array[i]);
+                }
                 break;
             case R.id.editText_dnspod_api:
                 mEditConfig.DNSPOD_SERVER_API = value;
                 break;
-            case R.id.editText_dnspod_id:
-                mEditConfig.DNSPOD_ID = value;
-                break;
-            case R.id.editText_dnspod_key:
-                mEditConfig.DNSPOD_KEY = value;
-                break;
-            case R.id.edittext_speed_config:
-                String content = value;
-                String[] array = content.split("\n");
-                ArrayList<String> result = new ArrayList<String>();
-                for (String item : array) {
-                    result.add(item);
-                }
-                mEditConfig.SPEEDPATH_LIST = result; 
+            case R.id.editText_udpdns_api:
+                mEditConfig.UDPDNS_SERVER_API = value;
                 break;
             default:
                 break;
@@ -325,6 +318,9 @@ public class TaskSettingFragment extends Fragment {
                 break;
             case R.id.checkbox_dnspod:
                 mEditConfig.IS_DNSPOD_SERVER = value;
+                break;
+            case R.id.checkbox_udpdns:
+                mEditConfig.IS_UDPDNS_SERVER = value;
                 break;
             case R.id.checkbox_sort:
                 mEditConfig.IS_SORT = value;
